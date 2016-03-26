@@ -5,7 +5,7 @@ $.ajax({
   'url': 'datas.json',
   'dataType': "json",
   'success': function(data) {
-    var bestPosAct, bestPosInit, bestPosition, bilan, ceQuilDevraitPayer, debug, determineFieldFactuPlace, i, j, k, keyword, l, len, len1, len2, listeBilanInitiaux, listeKeywordInitiaux, nbClientFactureParMois, ref, ref1, ref2, sommeFacturationParMois;
+    var bestPosAct, bestPosInit, bestPosition, bilan, ceQuilDevraitPayer, debug, determineFieldFactuPlace, fieldFactuPlace, i, j, k, keyword, l, len, len1, len2, listeBilanInitiaux, listeKeyword, listeKeywordInitiaux, nbClientFactureParMois, parsedInitialBilan, ref, ref1, sommeFacturationParMois;
     bestPosition = function(positions) {
       var bestPos, i, j, len, position;
       bestPos = null;
@@ -70,44 +70,46 @@ $.ajax({
         bilan = bilan.bilan;
         ceQuilDevraitPayer = 0;
         i = 0;
-        ref2 = JSON.parse(bilan.field_bilan).keyWords;
-        for (l = 0, len2 = ref2.length; l < len2; l++) {
-          keyword = ref2[l];
+        listeKeyword = JSON.parse(bilan.field_bilan).keyWords;
+        parsedInitialBilan = JSON.parse(listeBilanInitiaux[bilan.title_1].field_bilan);
+        for (l = 0, len2 = listeKeyword.length; l < len2; l++) {
+          keyword = listeKeyword[l];
           if (keyword.found === 1) {
             listeKeywordInitiaux = JSON.parse(listeBilanInitiaux[bilan.title_1].field_bilan);
             listeKeywordInitiaux = listeKeywordInitiaux.keyWords[i];
             bestPosAct = bestPosition(keyword.positions);
+            fieldFactuPlace = determineFieldFactuPlace(bestPosAct, bilan);
             if (listeKeywordInitiaux.found === 0) {
-              if (bestPosition(keyword.positions) !== -1) {
+              if (bestPosAct !== -1) {
                 if (debug) {
                   console.log("forcement au dessus");
                 }
-                ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan) * bilan.field_coef_factu_inf;
+                ceQuilDevraitPayer += fieldFactuPlace * bilan.field_coef_factu_inf;
               } else {
 
               }
             } else {
-              bestPosInit = bestPosition(JSON.parse(listeBilanInitiaux[bilan.title_1].field_bilan).keyWords[i].positions);
+              bestPosInit = bestPosition(parsedInitialBilan.keyWords[i].positions);
               if (bestPosInit > bestPosAct) {
                 if (debug) {
                   console.log("au dessus");
                 }
-                ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan) * bilan.field_coef_factu_inf;
+                ceQuilDevraitPayer += fieldFactuPlace * bilan.field_coef_factu_inf;
               } else if (bestPosInit === bestPosAct) {
                 if (bestPosInit === 1) {
                   if (debug) {
                     console.log("on reste premier");
                   }
-                  ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan) * bilan.field_coef_factu_first_iso;
+                  ceQuilDevraitPayer += fieldFactuPlace * bilan.field_coef_factu_first_iso;
                 } else {
                   if (debug) {
                     console.log("egal normal");
                   }
-                  ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan) * bilan.field_coef_factu_iso;
+                  ceQuilDevraitPayer += fieldFactuPlace * bilan.field_coef_factu_iso;
                 }
               }
-              i++;
             }
+            i++;
           }
         }
         if (debug) {
@@ -144,9 +146,11 @@ $.ajax({
     if (debug) {
       console.log(nbClientFactureParMois);
     }
+    console.log("Sommes des facturations par mois");
     Object.keys(sommeFacturationParMois).forEach(function(key) {
       return console.log(key, sommeFacturationParMois[key]);
     });
+    console.log("Sommes des clients facturés par mois");
     Object.keys(nbClientFactureParMois).forEach(function(key) {
       return console.log(key, nbClientFactureParMois[key]);
     });

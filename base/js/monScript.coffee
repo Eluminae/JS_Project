@@ -63,42 +63,44 @@ $.ajax
 
         # pour identifier le mot clef
         i=0
-        for keyword in JSON.parse(bilan.field_bilan).keyWords
+        listeKeyword = JSON.parse(bilan.field_bilan).keyWords
+        parsedInitialBilan = JSON.parse(listeBilanInitiaux[bilan.title_1].field_bilan)
+        for keyword in listeKeyword
           if keyword.found == 1
 
             listeKeywordInitiaux = JSON.parse(listeBilanInitiaux[bilan.title_1].field_bilan);
             listeKeywordInitiaux = listeKeywordInitiaux.keyWords[i];
 
+
             bestPosAct = bestPosition(keyword.positions)
 
+            fieldFactuPlace = determineFieldFactuPlace(bestPosAct, bilan)
+
             if listeKeywordInitiaux.found == 0
-              if bestPosition(keyword.positions) != -1
+              if bestPosAct != -1
                 # ici on es forcement au dessus parce qu'on es referencé alors qu'avant non
                 console.log "forcement au dessus" if debug
-                ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_inf
+                ceQuilDevraitPayer += fieldFactuPlace*bilan.field_coef_factu_inf
               else
                 #ici on es des gros looser. pas trouvé à l'init, pas trouvé apres le travail de referencement
             else
-
-              bestPosInit = bestPosition(JSON.parse(listeBilanInitiaux[bilan.title_1].field_bilan).keyWords[i].positions);
-
-
+              bestPosInit = bestPosition(parsedInitialBilan.keyWords[i].positions);
 
               # si on s'est amélioré
               if bestPosInit > bestPosAct
                 console.log "au dessus" if debug
-                ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_inf
+                ceQuilDevraitPayer += fieldFactuPlace*bilan.field_coef_factu_inf
 
 
               # si on es egal
               else if bestPosInit == bestPosAct
                 if bestPosInit == 1
                   console.log "on reste premier" if debug
-                  ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_first_iso
+                  ceQuilDevraitPayer += fieldFactuPlace*bilan.field_coef_factu_first_iso
                 else
                   console.log "egal normal" if debug
-                  ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_iso
-              i++
+                  ceQuilDevraitPayer += fieldFactuPlace*bilan.field_coef_factu_iso
+            i++
         console.log "il devrait payer : "+ceQuilDevraitPayer if debug
 
         if ceQuilDevraitPayer > bilan.field_plafond_facturation
@@ -119,9 +121,11 @@ $.ajax
     console.log "par x client" if debug
     console.log nbClientFactureParMois if debug
 
+    console.log "Sommes des facturations par mois"
     Object.keys(sommeFacturationParMois).forEach (key) ->
       console.log key, sommeFacturationParMois[key]
 
+    console.log "Sommes des clients facturés par mois"
     Object.keys(nbClientFactureParMois).forEach (key) ->
       console.log key, nbClientFactureParMois[key]
 
