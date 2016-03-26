@@ -1,26 +1,3 @@
-###
-rf.StandaloneDashboard (db) ->
-  chart = new ChartComponent "sales"
-  chart.setDimensions 8,6
-  chart.setCaption "sales - 2013 vs 2012"
-  chart.setLabels ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "July", "Aug", "Sept", "Oct", "Nov", "Dec"]
-  chart.addSeries "sales2013", "2013", [22400, 24800, 21800, 21800, 24600, 27600, 26800, 27700, 23700, 25900, 26800, 24800]
-  chart.addSeries "sales2012", "2012", [10000, 11500, 12500, 15000, 16000, 17600, 18800, 19700, 21700, 21900, 22900, 20800], {seriesDisplayType: "line"}
-  chart.setYAxis "Sales", {numberPrefix: "$", numberHumanize: true}
-  db.addComponent chart
-###
-
-###
-$.get "datas.json", (data, status) ->
-  for bilan in data.bilans
-    #console.log bilan.bilan.title
-    somme = 0
-  console.log data.bilans[0]
-, "json"
-###
-
-
-
 
 $.ajax
   'async': true
@@ -62,6 +39,7 @@ $.ajax
         else 0
 
 
+    debug= false
 
     listeBilanInitiaux = {}
 
@@ -96,11 +74,8 @@ $.ajax
             if listeKeywordInitiaux.found == 0
               if bestPosition(keyword.positions) != -1
                 # ici on es forcement au dessus parce qu'on es referencé alors qu'avant non
-                console.log "forcement au dessus"
-                console.log (determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_inf)
-
-                if (determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_inf) == 0
-                  console.log bestPosition(keyword.positions)
+                console.log "forcement au dessus" if debug
+                ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_inf
               else
                 #ici on es des gros looser. pas trouvé à l'init, pas trouvé apres le travail de referencement
             else
@@ -111,16 +86,51 @@ $.ajax
 
               # si on s'est amélioré
               if bestPosInit > bestPosAct
-                console.log "au dessus"
-                console.log (determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_inf)
+                console.log "au dessus" if debug
+                ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_inf
 
 
               # si on es egal
               else if bestPosInit == bestPosAct
                 if bestPosInit == 1
-                  console.log "on reste premier"
-                  console.log (determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_first_iso)
+                  console.log "on reste premier" if debug
+                  ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_first_iso
                 else
-                  console.log "egal normal"
-                  console.log (determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_iso)
+                  console.log "egal normal" if debug
+                  ceQuilDevraitPayer += determineFieldFactuPlace(bestPosAct, bilan)*bilan.field_coef_factu_iso
               i++
+        console.log "il devrait payer : "+ceQuilDevraitPayer if debug
+
+        if ceQuilDevraitPayer > bilan.field_plafond_facturation
+          console.log "or c'est supérieur à " + bilan.field_plafond_facturation if debug
+          ceQuilDevraitPayer = parseFloat(bilan.field_plafond_facturation)
+        console.log "" if debug
+
+        if !sommeFacturationParMois[bilan.created]
+          sommeFacturationParMois[bilan.created] = 0
+        if !nbClientFactureParMois[bilan.created]
+          nbClientFactureParMois[bilan.created] = 0
+
+        sommeFacturationParMois[bilan.created] += ceQuilDevraitPayer
+        nbClientFactureParMois[bilan.created] += 1
+
+    console.log "somme facturé" if debug
+    console.log sommeFacturationParMois if debug
+    console.log "par x client" if debug
+    console.log nbClientFactureParMois if debug
+
+    Object.keys(sommeFacturationParMois).forEach (key) ->
+      console.log key, sommeFacturationParMois[key]
+
+    Object.keys(nbClientFactureParMois).forEach (key) ->
+      console.log key, nbClientFactureParMois[key]
+
+    rf.StandaloneDashboard (db) ->
+      chart = new ChartComponent "sales"
+      chart.setDimensions 8,6
+      chart.setCaption "sales - 2013 vs 2012"
+      chart.setLabels ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "July", "Aug", "Sept", "Oct", "Nov", "Dec"]
+      chart.addSeries "sales2013", "2013", [22400, 24800, 21800, 21800, 24600, 27600, 26800, 27700, 23700, 25900, 26800, 24800]
+      chart.addSeries "sales2012", "2012", [10000, 11500, 12500, 15000, 16000, 17600, 18800, 19700, 21700, 21900, 22900, 20800], {seriesDisplayType: "line"}
+      chart.setYAxis "Sales", {numberPrefix: "$", numberHumanize: true}
+      db.addComponent chart
